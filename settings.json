@@ -69,6 +69,10 @@
       "enabled": false,
       "port": 4001
     },
+    "auto-gamemode": {
+      "enabled": false,
+      "gamemode": "creative"
+    },
 
     "auto-sleep": false,
     "auto-armor": false,

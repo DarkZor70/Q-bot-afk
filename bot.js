@@ -1,7 +1,7 @@
 const mineflayer = require('mineflayer');
 const Movements = require('mineflayer-pathfinder').Movements;
 const pathfinder = require('mineflayer-pathfinder').pathfinder;
-const { GoalBlock, GoalXZ, GoalNear } = require('mineflayer-pathfinder').goals;
+const { GoalBlock, GoalXZ, GoalNear, GoalGetToBlock } = require('mineflayer-pathfinder').goals;
 const autoeat = require('mineflayer-auto-eat').plugin;
 const armorManager = require('mineflayer-armor-manager');
 const webinventory = require('mineflayer-web-inventory');
@@ -13,9 +13,7 @@ const rl = readline.createInterface({
 
 const config = require('./settings.json');
 
-const loggers = require('./logging.js');
 const { error } = require('console');
-const logger = loggers.logger;
 
 function createBot() {
    let server = config.server.ip
@@ -38,6 +36,7 @@ function createBot() {
 
    bot.on('login', () => {
       log("Bot joined to the server");
+      process.title = `${bot.username} @ ${server}`
 
       if (config.utils['auto-auth'].enabled) {
          log('Started auto-auth module');
@@ -142,31 +141,52 @@ function createBot() {
       }
 
       if (config.utils['auto-sleep']) {
+         bot.on('rain', () => {
+            log('Trời đang mưa')
+            sleep()
+         })
+
          bot.on('time', () => {
-            if(bot.time.timeOfDay >= 13000){
-               goToSleep()
+            const isNight = bot.time.timeOfDay > 13000
+            if (isNight) {
+               log('Trời đang tối')
+               sleep()
             }
          })
       }
-
-      async function goToSleep () {
-         const bed = bot.findBlock({
-            matching: block => bot.isABed(block)
-         })
-         if (bed) {
-            try {
-               await bot.pathfinder.setGoal(new GoalNear(bed.position , 1))
-               await bot.sleep(bed)
-               bot.chat("I'm sleeping")
-            } catch (err) {
-               bot.chat(`I can't sleep: ${err.message}`)
+      
+      if (config.utils['auto-gamemode'].enabled) {
+         let gamemode = config.utils['auto-gamemode'].gamemode
+         bot.on('physicTick', () => {
+            if (bot.game.gameMode !== gamemode) {
+               bot.chat(`/gamemode ${gamemode}`)
+               log(bot.game.gameMode)
             }
-         } else {
-            bot.chat('No nearby bed')
-         }
+         }) 
       }
 
    });
+
+   function sleep () {
+      if (bot.isSleeping) return
+      const bed = bot.findBlock({
+         matching: block => bot.isABed(block)
+      })
+      if (!bed) {
+         log(`I can't see any bed`)
+         return
+      }
+      bot.pathfinder.setGoal(new GoalGetToBlock(bed.position.x, bed.position.y, bed.position.z))
+      bot.once('goal_reached', () => {
+         bot.sleep(bed, (err) => {
+            if (err) {
+               log(`Bot can't sleep because ${err.message}`)
+            } else {
+               log('Bot sleep')
+            }
+         })
+      })
+   }
    
    rl.on('line', (input) => {
       if (config.utils['console-chat']) {
