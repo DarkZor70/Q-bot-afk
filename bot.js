@@ -1,10 +1,12 @@
 const mineflayer = require('mineflayer');
 const Movements = require('mineflayer-pathfinder').Movements;
 const pathfinder = require('mineflayer-pathfinder').pathfinder;
-const { GoalBlock, GoalXZ, GoalNear, GoalGetToBlock } = require('mineflayer-pathfinder').goals;
+const { GoalBlock, GoalXZ, GoalNear, GoalGetToBlock, GoalFollow } = require('mineflayer-pathfinder').goals;
 const autoeat = require('mineflayer-auto-eat').plugin;
 const armorManager = require('mineflayer-armor-manager');
 const webinventory = require('mineflayer-web-inventory');
+const pvp = require('mineflayer-pvp').plugin;
+const { Vec3 } = require('vec3')
 const readline = require('readline')
 const rl = readline.createInterface({
   input: process.stdin,
@@ -12,8 +14,6 @@ const rl = readline.createInterface({
 })
 
 const config = require('./settings.json');
-
-const { error } = require('console');
 
 function createBot() {
    let server = config.server.ip
@@ -29,107 +29,170 @@ function createBot() {
    });
 
    bot.loadPlugin(pathfinder);
+   bot.loadPlugin(pvp);
    const mcData = require('minecraft-data')(bot.version);
    const defaultMove = new Movements(bot, mcData);
    bot.settings.colorsEnabled = false;
    bot.pathfinder.setMovements(defaultMove);
 
    bot.on('login', () => {
-      log("Bot joined to the server");
-      process.title = `${bot.username} @ ${server}`
+      bot.once('spawn', () => {
+         log("Bot joined to the server");
+         process.title = `${bot.username} @ ${server}`
 
-      if (config.utils['auto-auth'].enabled) {
-         log('Started auto-auth module');
+         if (config.utils['auto-auth'].enabled) {
+            log('Started auto-auth module');
 
-         let password = config.utils['auto-auth'].password;
-         setTimeout(() => {
-            bot.chat(`/register ${password} ${password}`);
-            bot.chat(`/login ${password}`);
-         }, 500);
+            let password = config.utils['auto-auth'].password;
+            setTimeout(() => {
+               bot.chat(`/register ${password} ${password}`);
+               bot.chat(`/login ${password}`);
+            }, 500);
 
-         log(`Authentication commands executed`);
-      }
-
-      if (config.utils['chat-messages'].enabled) {
-         log('Started chat-messages module');
-
-         let messages = config.utils['chat-messages']['messages'];
-
-         if (config.utils['chat-messages'].repeat) {
-            let delay = config.utils['chat-messages']['repeat-delay'];
-            let i = 0;
-
-            setInterval(() => {
-               bot.chat(`${messages[i]}`);
-
-               if (i + 1 === messages.length) {
-                  i = 0;
-               } else i++;
-            }, delay * 1000);
-         } else {
-            messages.forEach((msg) => {
-               bot.chat(msg);
-            });
-         }
-      }
-
-      const pos = config.position;
-
-      if (config.position.enabled) {
-         log(`Starting moving to target location (${pos.x}, ${pos.y}, ${pos.z})`);
-         bot.pathfinder.setGoal(new GoalBlock(pos.x, pos.y, pos.z));
-      }
-
-      if (config.utils['anti-afk'].enabled) {
-         if (config.utils['anti-afk'].sneak) {
-            bot.setControlState('sneak', true);
+            log(`Authentication commands executed`);
          }
 
-         if (config.utils['anti-afk'].jump) {
-            bot.setControlState('jump', true);
+         if (config.utils['chat-messages'].enabled) {
+            log('Started chat-messages module');
+
+            let messages = config.utils['chat-messages']['messages'];
+
+            if (config.utils['chat-messages'].repeat) {
+               let delay = config.utils['chat-messages']['repeat-delay'];
+               let i = 0;
+
+               setInterval(() => {
+                  bot.chat(`${messages[i]}`);
+
+                  if (i + 1 === messages.length) {
+                     i = 0;
+                  } else i++;
+               }, delay * 1000);
+            } else {
+               messages.forEach((msg) => {
+                  bot.chat(msg);
+               });
+            }
          }
 
-         if (config.utils['anti-afk']['hit'].enabled) {
-            let delay = config.utils['anti-afk']['hit']['delay'];
-            let attackMobs = config.utils['anti-afk']['hit']['attack-mobs']
+         const pos = config.position;
 
-            setInterval(() => {
-               if(attackMobs) {
-                     let entity = bot.nearestEntity(e => e.type !== 'object' && e.type !== 'player'
-                         && e.type !== 'global' && e.type !== 'orb' && e.type !== 'other');
+         if (config.position.enabled) {
+            log(`Starting moving to target location (${pos.x}, ${pos.y}, ${pos.z})`);
+            bot.pathfinder.setGoal(new GoalBlock(pos.x, pos.y, pos.z));
 
-                     if(entity) {
-                        bot.attack(entity);
-                        return
+            bot.on('goal_reached', () => {
+               log(`Bot arrived to target location. ${bot.entity.position}`);
+            })
+         }
+
+         if (config.utils['anti-afk'].enabled) {
+            if (config.utils['anti-afk'].sneak) {
+               bot.setControlState('sneak', true);
+            }
+
+            if (config.utils['anti-afk'].jump) {
+               bot.setControlState('jump', true);
+            }
+
+            if (config.utils['anti-afk']['hit'].enabled) {
+               let delay = config.utils['anti-afk']['hit']['delay'];
+               let attackMobs = config.utils['anti-afk']['hit']['attack-mobs']
+
+               setInterval(() => {
+                  if(attackMobs) {
+                        let entity = bot.nearestEntity(e => e.type !== 'object' && e.type !== 'player'
+                            && e.type !== 'global' && e.type !== 'orb' && e.type !== 'other');
+
+                        if(entity) {
+                           bot.attack(entity);
+                           return
+                        }
+                  }
+
+                  bot.swingArm("right", true);
+               }, delay);
+            }
+
+            if (config.utils['anti-afk'].rotate) {
+               setInterval(() => {
+                  bot.look(bot.entity.yaw + 1, bot.entity.pitch, true);
+               }, 100);
+            }
+
+            if (config.utils['anti-afk'].walk.enabled) {
+               
+               bot.on('death', () => {
+               })
+               switch(config.utils['anti-afk'].walk.selected) {
+                  case 'rhombus':
+                     const rhombusradius = config.utils['anti-afk'].walk.mode.rhombus.radius
+                     rhombuswalk(bot, rhombusradius)
+                     break
+
+                  case 'square':
+                     const squareradius = config.utils['anti-afk'].walk.mode.square.radius
+                     squarewalk(bot, squareradius)
+                     break
+
+                  case 'circle':
+                     const center = bot.entity.position.clone()
+                     const circleradius = config.utils['anti-afk'].walk.mode.circle.radius
+                     const speed = 2 * Math.PI / (circleradius * 20)
+                     let theta = 0
+
+                     bot.on('physicTick', () => {
+                        theta += speed
+                        const x = center.x + circleradius * Math.cos(theta)
+                        const z = center.z + circleradius * Math.sin(theta)
+                        const y = bot.entity.position.y
+                        const target = new Vec3(x, y, z)
+                        bot.lookAt(target)
+                        bot.setControlState('forward', true)
+                     })
+                     break
+
+                  case 'random':
+                     startAFK()
+                     function startAFK() {
+                        setTimeout(() => {
+                           const direction = Math.floor(Math.random() * 5);
+                              switch (direction) {
+                                 case 0:
+                                    bot.setControlState('forward', true);
+                                    break;
+                                 case 1:
+                                    bot.setControlState('back', true);
+                                    break;
+                                 case 2:
+                                    bot.setControlState('left', true);
+                                    break;
+                                 case 3:
+                                    bot.setControlState('right', true);
+                                    break;
+                                 case 4:
+                                    bot.setControlState('jump', true);
+                                    setTimeout(() => bot.setControlState('jump', false), 250);
+                                    break;
+                              }
+                           startAFK();
+                        }, config.utils['anti-afk'].walk.mode.random.time);
                      }
+                     break
+
+                  default:
+                     log(`Unknow mode: ${config.utils['anti-afk'].walk.selected}`)
+                     break
                }
-
-               bot.swingArm("right", true);
-            }, delay);
+            }
          }
-
-         if (config.utils['anti-afk'].rotate) {
-            setInterval(() => {
-               bot.look(bot.entity.yaw + 1, bot.entity.pitch, true);
-            }, 100);
-         }
-
-         if (config.utils['anti-afk']['circle-walk'].enabled) {
-            let radius = config.utils['anti-afk']['circle-walk']['radius']
-            circleWalk(bot, radius);
-         }
-      }
+      })
 
       if (config.utils['auto-eat'].enabled) {
          bot.loadPlugin(autoeat)
          bot.autoEat.options.priority = 'foodPoints';
          bot.autoEat.options.startAt = config.utils['auto-eat']['eat-at'];
          bot.autoEat.options.bannedFood.push(...config.utils['auto-eat']['no-eat']);
-      }
-
-      if (config.utils['auto-armor']) {
-         bot.loadPlugin(armorManager)
-         bot.armorManager.equipAll()
       }
 
       if (config.utils.webinv.enabled) {
@@ -142,33 +205,35 @@ function createBot() {
 
       if (config.utils['auto-sleep']) {
          bot.on('rain', () => {
-            log('Trời đang mưa')
+            if (bot.isSleeping) return
+            log(`It's raining`)
             sleep()
          })
 
          bot.on('time', () => {
+            if (bot.isSleeping) return
             const isNight = bot.time.timeOfDay > 13000
             if (isNight) {
-               log('Trời đang tối')
+               log(`It's night`)
                sleep()
             }
          })
       }
       
-      if (config.utils['auto-gamemode'].enabled) {
-         let gamemode = config.utils['auto-gamemode'].gamemode
-         bot.on('physicTick', () => {
-            if (bot.game.gameMode !== gamemode) {
-               bot.chat(`/gamemode ${gamemode}`)
-               log(bot.game.gameMode)
-            }
-         }) 
+      if (config.pvp['auto-totem'].enabled) {
+         bot.loadPlugin(autototem)
+         bot.on("physicsTick", async () => {
+            bot.autototem.equip()
+        })
       }
 
+      if (config.pvp['auto-armor']) {
+         bot.loadPlugin(armorManager);
+         bot.armorManager.equipAll()
+      }
    });
 
    function sleep () {
-      if (bot.isSleeping) return
       const bed = bot.findBlock({
          matching: block => bot.isABed(block)
       })
@@ -178,6 +243,7 @@ function createBot() {
       }
       bot.pathfinder.setGoal(new GoalGetToBlock(bed.position.x, bed.position.y, bed.position.z))
       bot.once('goal_reached', () => {
+         bot.pathfinder.setGoal(null)
          bot.sleep(bed, (err) => {
             if (err) {
                log(`Bot can't sleep because ${err.message}`)
@@ -202,16 +268,45 @@ function createBot() {
       log(`[AutoEat] Finished eating ${item.name} in ${offhand ? 'offhand' : 'hand'}`)
    });
 
+   bot.on('spawn', () => {
+      if (config.guard.enabled) {
+         bot.pathfinder.setGoal(null)
+         const guardpos = config.guard.position
+         const mcData = require('minecraft-data')(bot.version)
+         const movements = new Movements(bot, mcData)
+         movements.scafoldingBlocks = ['stone', 'cobblestone', 'dirt']
+         bot.on("physicsTick", () => {
+            const botpos = bot.entity.position
+            const botposroundingx = Math.floor(botpos.x)
+            const botposroundingy = Math.floor(botpos.y)
+            const botposroundingz = Math.floor(botpos.z)
+            const guardposroundingx = Math.floor(guardpos.x)
+            const guardposroundingy = Math.floor(guardpos.y)
+            const guardposroundingz = Math.floor(guardpos.z)
+            const filter = e => (e.type === 'mob' || e.type === 'player') && e.position.distanceTo(bot.entity.position) < 10 && e.mobType !== 'Armor Stand' && e !== bot.players['quangei'].entity
+            const target = bot.nearestEntity(filter)
+            if (!target) {
+               if (botposroundingx !== guardposroundingx || botposroundingy !== guardposroundingy || botposroundingz !== guardposroundingz) {
+                  if (bot.pathfinder.isMoving()) return
+                  if (bot.pvp.target) return
+                  bot.pathfinder.setGoal(new GoalBlock(guardpos.x, guardpos.y, guardpos.z))
+                  bot.pvp.stop()
+               }
+            } else if (target) {
+               bot.pathfinder.setGoal(new GoalFollow(target, 2), true)
+               if (bot.pathfinder.isMoving()) return
+               const sword = bot.inventory.items().find(item => item.name.includes('sword'))
+               if (sword) {bot.equip(sword, 'hand')}
+               bot.pvp.attack(target)
+            }}
+         )
+      }
+   })
+
    bot.on('message', (message, position) => {
       if (position == 'game_info') return
       if (config.utils['mes-log']) {
          log(message.toAnsi());
-      }
-   });
-
-   bot.on('goal_reached', () => {
-      if(config.positiion.enabled) {
-         log(`Bot arrived to target location. ${bot.entity.position}`);
       }
    });
 
@@ -224,7 +319,7 @@ function createBot() {
          for (let i = 0; i < chat.length; i++) {
          setTimeout(() => {
             bot.chat(chat[i]);
-         }, i * delay * 1000);
+         }, i * delay);
          }
       });
    })
@@ -254,7 +349,7 @@ function createBot() {
    );
 }
 
-function circleWalk(bot, radius) {
+function rhombuswalk(bot, radius) {
    return new Promise(() => {
       const pos = bot.entity.position;
       const x = pos.x;
@@ -277,23 +372,46 @@ function circleWalk(bot, radius) {
    });
 }
 
+function squarewalk(bot, radius) {
+   return new Promise(() => {
+      const pos = bot.entity.position;
+      const x = pos.x;
+      const y = pos.y;
+      const z = pos.z;
+
+      const points = [
+         [x + radius, y, z],
+         [x + radius, y, z + radius],
+         [x, y, z + radius],
+         [x, y, z]
+      ];
+
+      let i = 0;
+      setInterval(() => {
+         if(i === points.length) i = 0;
+         bot.pathfinder.setGoal(new GoalXZ(points[i][0], points[i][2]));
+         i++;
+      }, 1000);
+   });
+}
+
 createBot();
 
 const now = new Date()
 const time = now.toLocaleString().replace("," , "-").replace(" " , "")
 
 function log(input) {
-   console.log(`\r\x1b[38;2;11;252;3m [${config.server.ip}] [${time}] [INFO] >>>\x1b[0m ${input.padEnd(50, ` `)}`)
+   console.log(`\r\x1b[38;2;11;252;3m [${config.server.ip}] [${time}] [INFO] >>>\x1b[0m ${input}`)
    rl.prompt(true)
 }
 
 function warn(input) {
-   console.warn(`\r\x1b[38;2;255;238;5m [${config.server.ip}] [${time}] [WARN] >>> ${input.padEnd(50, ` `)}\x1b[0m`)
+   console.warn(`\r\x1b[38;2;255;238;5m [${config.server.ip}] [${time}] [WARN] >>> ${input}\x1b[0m`)
    rl.prompt(true)
 }
 
 function berror(input) {
-   berror(`\r\x1b[38;2;255;5;5m [${config.server.ip}] [${time}] [ERROR] >>> ${input.padEnd(50, ` `)}\x1b[0m`)
+   console.error(`\r\x1b[38;2;255;5;5m [${config.server.ip}] [${time}] [ERROR] >>> ${input}\x1b[0m`)
    rl.prompt(true)
 }
 

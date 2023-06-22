@@ -12,9 +12,25 @@
 
   "position": {
     "enabled": false,
-    "x": 0,
-    "y": 0,
-    "z": 0
+    "x": 279,
+    "y": 101,
+    "z": -242
+  },
+
+  "guard": {
+    "enabled": false,
+    "position": {
+      "x": 292,
+      "y": 85,
+      "z": -222
+    }
+  },
+
+  "pvp": {
+    "auto-totem":{
+      "enabled": false
+    },
+    "auto-armor": false
   },
 
   "utils": {
@@ -31,13 +47,26 @@
 
       "hit": {
         "enabled": false,
-        "delay": 1000,
+        "delay": 500,
         "attack-mobs": false
       },
 
-      "circle-walk": {
+      "walk": {
         "enabled": false,
-        "radius": 2
+        "mode": {
+          "random":{
+            "time": 1000
+          },
+          "circle":{
+            "radius": 5
+          },
+          "square":{
+            "radius": 5
+          },
+          "rhombus":{
+            "radius": 5
+          }},
+        "selected": "random"
       }
     },
 
@@ -55,8 +84,8 @@
 
     "respawn-chat": {
       "enabled": false,
-      "delay": 1,
-      "chat": ["Respawn", "text", ""]
+      "delay": 1000,
+      "chat": ["Respawn", "text", "..."]
     },
 
     "auto-eat": {
@@ -69,15 +98,10 @@
       "enabled": false,
       "port": 4001
     },
-    "auto-gamemode": {
-      "enabled": false,
-      "gamemode": "creative"
-    },
 
-    "auto-sleep": false,
-    "auto-armor": false,
+    "auto-sleep": false,  
     "mes-log": false,
-    "console-chat": false,
+    "console-chat": true,
     "auto-reconnect": false,
     "auto-reconnect-delay": 5000
   }
