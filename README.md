@@ -16,7 +16,7 @@
   1. Download & install [Node.JS](https://nodejs.org/en/download/)
   2. Download & install [Git Bash](https://git-scm.com/downloads)
   3. Open cmd
-  4. Go to the file you want to save it with the "cd" command
+  4. Go to the file you want to save it with the `cd` command
   5. Type the command `git clone https://github.com/quangei/Q-bot-afk.git`
   6. Type the command `npm íntall` or activated Install.bat
 
