@@ -17,8 +17,8 @@
   2. Download & install [Git Bash](https://git-scm.com/downloads)
   3. Open cmd
   4. Go to the file you want to save it with the "cd" command
-  5. Type the command "git clone https://github.com/quangei/Q-bot-afk.git"
-  6. Type the command "npm íntall" or activated Install.bat
+  5. Type the command `git clone https://github.com/quangei/Q-bot-afk.git`
+  6. Type the command `npm íntall` or activated Install.bat
 
 ### Replit
   1. Click the plus sign in the upper right corner (Create a Repl)
@@ -33,7 +33,7 @@
 ### Local Machine
   1. Edit the bot's information and functions in settings.json
   2. Open cmd
-  3. Type the command "node bot.js" or activated Start.bat
+  3. Type the command `node bot.js` or activated Start.bat
      
 ### Replit
   1. Edit the bot's information and functions in settings.json
