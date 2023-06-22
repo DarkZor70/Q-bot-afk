@@ -26,7 +26,8 @@
   3. Click "Import from GitHub"
   4. Paste "github.com/quangei/Q-bot-afk" into the GitHub URL section
   5. Click "Import from GitHub" and wait for it to import
-  6. If there is a config section, just press done
+  6. If there is a config run command section, just press done
+  7. Type the command `npm íntall` into Shell
 
 ## Usage
 
