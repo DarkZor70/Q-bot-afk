@@ -39,6 +39,7 @@
 ### Replit
   1. Edit the bot's information and functions in settings.json
   2. Click "Run"
+  3. If you want to run it 24/7 you can use uptime robot
 
 ## Features
 
