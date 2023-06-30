@@ -14,6 +14,18 @@ const rl = readline.createInterface({
 })
 
 const config = require('./settings.json');
+const express = require('express');
+
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send('Bot Is Ready')
+});
+
+app.listen(3000, () => {
+  console.log('Server started');
+});
+
 
 function createBot() {
    let server = config.server.ip
@@ -28,14 +40,14 @@ function createBot() {
       version: config.server.version,
    });
 
-   bot.loadPlugin(pathfinder);
-   bot.loadPlugin(pvp);
-   const mcData = require('minecraft-data')(bot.version);
-   const defaultMove = new Movements(bot, mcData);
-   bot.settings.colorsEnabled = false;
-   bot.pathfinder.setMovements(defaultMove);
-
    bot.on('login', () => {
+    bot.loadPlugin(pathfinder);
+    bot.loadPlugin(pvp);
+    const mcData = require('minecraft-data')(bot.version);
+    const defaultMove = new Movements(bot, mcData);
+    bot.settings.colorsEnabled = false;
+    bot.pathfinder.setMovements(defaultMove);
+
       bot.once('spawn', () => {
          log("Bot joined to the server");
          process.title = `${bot.username} @ ${server}`
@@ -312,6 +324,7 @@ function createBot() {
 
    bot.on('death', () => {
       warn(`Bot has been died and was respawned at ${bot.entity.position}`);
+      if(config.utils['respawn-chat'].enabled)
       bot.once('spawn', () => {
          const chat = config.utils['respawn-chat'].chat;
          const delay = config.utils['respawn-chat'].delay;
