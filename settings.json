@@ -1,13 +1,13 @@
 {
   "bot-account": {
-    "username": "Bot",
+    "username": "___Server___",
     "password": "your_password",
     "type": "offline"
   },
 
   "server": {
-    "ip": "localhost:25565",
-    "version": "1.8.9"
+    "ip": "0neon0aternos.me:20439",
+    "version": "1.18.1"
   },
 
   "position": {
@@ -28,22 +28,22 @@
 
   "pvp": {
     "auto-totem":{
-      "enabled": false
+      "enabled": true
     },
-    "auto-armor": false
+    "auto-armor": true
   },
 
   "utils": {
     "auto-auth": {
-      "enabled": false,
-      "password": "12345678"
+      "enabled": true,
+      "password": "15162910"
     },
 
     "anti-afk": {
       "enabled": false,
-      "sneak": false,
-      "jump": false,
-      "rotate": false,
+      "sneak": true,
+      "jump": true,
+      "rotate": true,
 
       "hit": {
         "enabled": false,
@@ -52,7 +52,7 @@
       },
 
       "walk": {
-        "enabled": false,
+        "enabled": true,
         "mode": {
           "random":{
             "time": 1000
@@ -102,7 +102,7 @@
     "auto-sleep": false,  
     "mes-log": false,
     "console-chat": true,
-    "auto-reconnect": false,
-    "auto-reconnect-delay": 5000
+    "auto-reconnect": true,
+    "auto-reconnect-delay": 5
   }
 }
